@@ -142,5 +142,5 @@ class Agent:
 
         obs = torch.tensor(observation, dtype=torch.float32).unsqueeze(0).to(self.device)
         with torch.no_grad():
-            action = self.actor(obs).cpu().numpy()[0]
+            action = self.actor(obs).cpu().squeeze(0).tolist()
         return np.clip(action, -1, 1)
