@@ -23,7 +23,7 @@ start_time = time.time()
 last_log_time = start_time
 last_log_step = 0
 
-writer = SummaryWriter(log_dir="runs2/ddpg")
+writer = SummaryWriter(log_dir="runs2/ddpg_lr_decay")
 
 # === Evaluation Function ===
 def evaluate(agent, env, episodes=5):
@@ -87,6 +87,8 @@ while step_count < int(1e8):
             writer.add_scalar("Loss/Critic", critic_loss.item(), step_count)
             writer.add_scalar("Loss/Actor", actor_loss.item(), step_count)
             writer.add_scalar("Q-Value", current_q.mean().item(), step_count)
+            writer.add_scalar("LR/Actor", agent.actor_scheduler.get_last_lr()[0], step_count)
+            writer.add_scalar("LR/Critic", agent.critic_scheduler.get_last_lr()[0], step_count)
 
     if done:
         if step_count % 1000 == 0:
@@ -102,7 +104,7 @@ while step_count < int(1e8):
         writer.add_scalar("Eval/Return", avg_eval_return, step_count)
         print(f"[Evaluation] Step {step_count} | Eval Avg Return: {avg_eval_return:.3f}")
 
-        os.makedirs("checkpoints", exist_ok=True)
+        os.makedirs("checkpoints_lr", exist_ok=True)
         torch.save(agent.actor.state_dict(), f"checkpoints/ddpg_actor_step{step_count}.pth")
         torch.save(agent.critic.state_dict(), f"checkpoints/ddpg_critic_step{step_count}.pth")
 
