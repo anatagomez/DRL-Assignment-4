@@ -133,7 +133,7 @@ class Agent:
         self.act_dim = 21
 
         self.actor = Actor(self.obs_dim, self.act_dim).to(self.device)
-        self.actor.load_state_dict(torch.load("ddpg_actor_step9800000.pth", map_location=self.device))
+        self.actor.load_state_dict(torch.load("ddpg_actor_step6450000.pth", map_location=self.device))
         self.actor.eval()
 
     def act(self, observation):
