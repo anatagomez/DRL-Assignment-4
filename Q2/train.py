@@ -1,5 +1,3 @@
-# train_td3_cartpole.py
-
 import os
 import torch
 import torch.nn as nn
@@ -9,13 +7,11 @@ from collections import deque
 import random
 from dmc import make_dmc_env
 
-# Set random seeds for reproducibility
 SEED = 42
 torch.manual_seed(SEED)
 np.random.seed(SEED)
 random.seed(SEED)
 
-# Hyperparameters
 MAX_EPISODES = 1000
 MAX_STEPS = 1000
 BATCH_SIZE = 100
@@ -36,7 +32,6 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Replay Buffer
 class ReplayBuffer:
     def __init__(self, max_size=REPLAY_BUFFER_SIZE):
         self.buffer = deque(maxlen=max_size)
@@ -57,7 +52,6 @@ class ReplayBuffer:
     def size(self):
         return len(self.buffer)
 
-# Actor Network
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, max_action):
         super(Actor, self).__init__()
@@ -71,15 +65,14 @@ class Actor(nn.Module):
         a = torch.relu(self.l2(a))
         return self.max_action * torch.tanh(self.l3(a))
 
-# Critic Network (Q1 and Q2)
 class Critic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__()
-        # Q1 architecture
+  
         self.l1 = nn.Linear(state_dim + action_dim, 256)
         self.l2 = nn.Linear(256, 256)
         self.l3 = nn.Linear(256, 1)
-        # Q2 architecture
+
         self.l4 = nn.Linear(state_dim + action_dim, 256)
         self.l5 = nn.Linear(256, 256)
         self.l6 = nn.Linear(256, 1)
@@ -101,7 +94,6 @@ class Critic(nn.Module):
         q1 = self.l3(q1)
         return q1
 
-# TD3 Agent
 class TD3Agent:
     def __init__(self, state_dim, action_dim, max_action):
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
@@ -127,48 +119,37 @@ class TD3Agent:
 
         self.total_it += 1
 
-        # Sample replay buffer
         state, action, reward, next_state, done = replay_buffer.sample(BATCH_SIZE)
 
         with torch.no_grad():
-            # Select action according to policy and add clipped noise
             noise = (torch.randn_like(action) * POLICY_NOISE).clamp(-NOISE_CLIP, NOISE_CLIP)
             next_action = (self.actor_target(next_state) + noise).clamp(-self.max_action, self.max_action)
 
-            # Compute the target Q value
             target_Q1, target_Q2 = self.critic_target(next_state, next_action)
             target_Q = torch.min(target_Q1, target_Q2)
             target_Q = reward + ((1 - done) * GAMMA * target_Q)
 
-        # Get current Q estimates
         current_Q1, current_Q2 = self.critic(state, action)
 
-        # Compute critic loss
         critic_loss = nn.MSELoss()(current_Q1, target_Q) + nn.MSELoss()(current_Q2, target_Q)
 
-        # Optimize the critic
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
 
-        # Delayed policy updates
         if self.total_it % POLICY_DELAY == 0:
-            # Compute actor loss
             actor_loss = -self.critic.Q1(state, self.actor(state)).mean()
 
-            # Optimize the actor
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
 
-            # Update the frozen target models
             for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
                 target_param.data.copy_(TAU * param.data + (1 - TAU) * target_param.data)
 
             for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
                 target_param.data.copy_(TAU * param.data + (1 - TAU) * target_param.data)
 
-# Main training loop
 def train():
     env = make_dmc_env("cartpole-balance", SEED, flatten=True, use_pixels=False)
     state_dim = env.observation_space.shape[0]
@@ -208,12 +189,10 @@ def train():
         episode_rewards.append(episode_reward)
         print(f"Episode: {episode + 1}, Reward: {episode_reward:.2f}")
 
-        # Save the model
         if SAVE_MODEL and (episode + 1) % 50 == 0:
             torch.save(agent.actor.state_dict(), os.path.join(MODEL_DIR, "td3_actor.pth"))
             print(f"Saved model at episode {episode + 1}")
 
-    # Final save
     if SAVE_MODEL:
         torch.save(agent.actor.state_dict(), os.path.join(MODEL_DIR, "td3_actor.pth"))
         print("Training complete. Model saved.")

@@ -45,7 +45,6 @@ def train_td3(env_name="Pendulum-v1", episodes=1000, max_steps=200, start_timest
         episode_rewards.append(episode_reward)
         print(f"Episode {episode + 1}, Reward: {episode_reward:.2f}, Avg (last 10): {np.mean(episode_rewards[-10:]):.2f}")
 
-        # Optional: save model every N episodes
         if (episode + 1) % 100 == 0:
             torch.save(agent.actor.state_dict(), os.path.join(project_dir, f"td3_actor_ep{episode + 1}.pth"))
             torch.save(agent.critic.state_dict(), os.path.join(project_dir, f"td3_critic_ep{episode + 1}.pth"))

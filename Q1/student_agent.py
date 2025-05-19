@@ -7,13 +7,11 @@ import random
 from collections import deque
 import os
 
-# Set random seeds for reproducibility
 SEED = 42
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 random.seed(SEED)
 
-# Hyperparameters
 BUFFER_SIZE = int(1e6)
 BATCH_SIZE = 256
 GAMMA = 0.99
@@ -25,9 +23,8 @@ ACTOR_LR = 1e-3
 CRITIC_LR = 1e-3
 MAX_ACTION = 2.0
 MIN_ACTION = -2.0
-DEVICE = torch.device("cpu")  # Ensure CPU mode for submission
+DEVICE = torch.device("cpu")  
 
-# Actor Network
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, max_action):
         super(Actor, self).__init__()
@@ -41,15 +38,13 @@ class Actor(nn.Module):
         a = F.relu(self.l2(a))
         return self.max_action * torch.tanh(self.l3(a))
 
-# Critic Network (Twin Q-networks)
 class Critic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__()
-        # Q1 architecture
         self.l1 = nn.Linear(state_dim + action_dim, 400)
         self.l2 = nn.Linear(400, 300)
         self.l3 = nn.Linear(300, 1)
-        # Q2 architecture
+
         self.l4 = nn.Linear(state_dim + action_dim, 400)
         self.l5 = nn.Linear(400, 300)
         self.l6 = nn.Linear(300, 1)
@@ -74,7 +69,6 @@ class Critic(nn.Module):
         q1 = self.l3(q1)
         return q1
 
-# Replay Buffer
 class ReplayBuffer:
     def __init__(self, max_size=BUFFER_SIZE):
         self.buffer = deque(maxlen=max_size)
@@ -95,7 +89,6 @@ class ReplayBuffer:
     def size(self):
         return len(self.buffer)
 
-# TD3 Agent
 class TD3Agent:
     def __init__(self, state_dim, action_dim, max_action):
         self.actor = Actor(state_dim, action_dim, max_action).to(DEVICE)
@@ -164,7 +157,6 @@ class Agent(object):
 
         self.td3_agent = TD3Agent(state_dim, action_dim, max_action)
 
-        # Load trained actor weights
         weights_path = "td3_actor_ep1000.pth"
         if os.path.exists(weights_path):
             self.td3_agent.actor.load_state_dict(torch.load(weights_path, map_location=DEVICE))
@@ -175,6 +167,5 @@ class Agent(object):
         self.total_steps = 0
 
     def act(self, observation):
-        # No more random actions — always use policy (with no noise for consistent evaluation)
         action = self.td3_agent.select_action(np.array(observation), noise=0.0)
         return action

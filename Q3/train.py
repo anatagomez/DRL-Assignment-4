@@ -7,7 +7,6 @@ from torch.utils.tensorboard import SummaryWriter
 import os
 import time
 
-# === Setup ===
 env = D4PGEnvWrapper(make_dmc_env("humanoid-walk", seed=np.random.randint(0, 1000000), flatten=True, use_pixels=False))
 eval_env = D4PGEnvWrapper(make_dmc_env("humanoid-walk", seed=np.random.randint(0, 1000000), flatten=True, use_pixels=False))
 obs_dim = env.observation_space.shape[0]
@@ -25,7 +24,6 @@ last_log_step = 0
 
 writer = SummaryWriter(log_dir="runs2/ddpg_lr_decay")
 
-# === Evaluation Function ===
 def evaluate(agent, env, episodes=5):
     returns = []
     for _ in range(episodes):
@@ -41,7 +39,6 @@ def evaluate(agent, env, episodes=5):
         returns.append(total_return)
     return np.mean(returns)
 
-# === Training Loop ===
 while step_count < int(1e8):
     action = agent.select_action(obs)
     next_obs, reward, done, _ = env.step(action)
@@ -51,7 +48,7 @@ while step_count < int(1e8):
     episode_return += reward
     step_count += 1
 
-    # Update and print training diagnostics every 1000 steps
+    #Update and print training diagnostics every 1k steps
     if len(agent.replay_buffer) >= 64:
         batch = agent.replay_buffer.sample(64)
         states = torch.tensor(np.array(batch.state), dtype=torch.float32).to(agent.device)
@@ -98,7 +95,7 @@ while step_count < int(1e8):
             episode_return = 0
             episode_count += 1
 
-    # Periodic evaluation and checkpointing
+    #Short evaluation and checkpointing every 50k steps
     if step_count % 50000 == 0:
         avg_eval_return = evaluate(agent, eval_env)
         writer.add_scalar("Eval/Return", avg_eval_return, step_count)
@@ -108,7 +105,7 @@ while step_count < int(1e8):
         torch.save(agent.actor.state_dict(), f"checkpoints/ddpg_actor_step{step_count}.pth")
         torch.save(agent.critic.state_dict(), f"checkpoints/ddpg_critic_step{step_count}.pth")
 
-    # Log throughput every 10,000 steps
+    # check throughput every 10k steps
     if step_count % 10000 == 0:
         now = time.time()
         elapsed = now - last_log_time

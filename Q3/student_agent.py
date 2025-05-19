@@ -1,4 +1,3 @@
-# DDPG Agent Implementation with specified hyperparameters
 import numpy as np
 import torch
 import torch.nn as nn
@@ -8,7 +7,6 @@ from torch.optim.lr_scheduler import ExponentialLR
 from collections import deque, namedtuple
 import random
 
-# === Hyperparameters ===
 LR = 2.5e-4
 GAMMA = 0.99
 BATCH_SIZE = 64
@@ -78,7 +76,6 @@ class DDPGAgent:
         self.actor_opt = optim.Adam(self.actor.parameters(), lr=LR)
         self.critic_opt = optim.Adam(self.critic.parameters(), lr=LR)
 
-        # === Learning Rate Schedulers ===
         gamma = (2.5e-6 / 2.5e-4) ** (1 / 10_000_000)  # decay from 2.5e-4 → 2.5e-6 over 10M steps
         self.actor_scheduler = ExponentialLR(self.actor_opt, gamma=gamma)
         self.critic_scheduler = ExponentialLR(self.critic_opt, gamma=gamma)
@@ -123,7 +120,6 @@ class DDPGAgent:
         actor_loss.backward()
         self.actor_opt.step()
 
-        # Soft update target networks
         for target_param, param in zip(self.critic_target.parameters(), self.critic.parameters()):
             target_param.data.copy_(TAU * param.data + (1.0 - TAU) * target_param.data)
         for target_param, param in zip(self.actor_target.parameters(), self.actor.parameters()):
@@ -139,7 +135,7 @@ class Agent:
         self.act_dim = 21
 
         self.actor = Actor(self.obs_dim, self.act_dim).to(self.device)
-        self.actor.load_state_dict(torch.load("ddpg_actor_step8600000.pth", map_location=self.device))
+        self.actor.load_state_dict(torch.load("ddpg_actor_step9700000.pth", map_location=self.device))
         self.actor.eval()
 
     def act(self, observation):
